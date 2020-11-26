@@ -17,6 +17,7 @@ class main():
         # Code pulled from: https://www.reddit.com/r/learnpython/comments/29zchz/sqlite3_check_if_a_column_exists_if_it_does_not/
         #Deletes the old IPFS table data.
         if "Ipfs" in [i[1] for i in universal.databaseRef.direct_sqlite_return("PRAGMA table_info(File)")]:
+            print("Updating IPFS DB to modern standards PLEASEWAIT")
             universal.databaseRef.direct_sqlite("""DROP TABLE File_backup""")
             universal.databaseRef.direct_sqlite("""CREATE TABLE File_backup(id INTEGER,
                                                 hash text, 
@@ -37,23 +38,43 @@ class main():
         if universal.databaseRef.return_count("File", "id") != universal.databaseRef.return_count("Tags", "namespace", namespace_id):
             has_ipfs = universal.databaseRef.pull_data("Tags", "namespace", namespace_id)
             
-            
+            to_del = []
+            for each in has_ipfs:
+                try:
+                    file_id = universal.databaseRef.search_relationships(each[0])
+                    to_del.append(file_id[0][1])
+                except IndexError:
+                    print("ERROR WITH: ", each)
+            for each in to_del:
+                try:
+                    universal.databaseRef.delete_data("Relationship", "tagid", each)
+                    universal.databaseRef.delete_data("Tags", "id", each)
+                except IndexError:
+                    print("ERROR WITH: ", each)
+
             totallist = universal.databaseRef.invert_pull_data("File", "id", "")
-            
+            #has_ipfs = []
             file_list = []
             for each in totallist:
                 file_id = each[0]
                 file_list.append(file_id)
             
             ipfs_list = []
+            has_ipfs = universal.databaseRef.pull_data("Tags", "namespace", namespace_id)
             for each in has_ipfs:
-                file_id = universal.databaseRef.search_relationships(each[0])[0][0]
-                ipfs_list.append(file_id)
-            
+                try:
+                    file_id = universal.databaseRef.search_relationships(each[0])[0][0]
+                    ipfs_list.append(file_id)
+                except IndexError:
+                    print(each, file_id)
+
             parsed_list = set(file_list) - set(ipfs_list)
-            
+            print("Parsed List Length", len(parsed_list))
             for each in parsed_list:
-                self.pin_handler("", totallist[each][1], totallist[each][2])
+                try:
+                    self.pin_handler("", totallist[each - 1][1], totallist[each - 1][2])
+                except IndexError:
+                    print("Err1r with: ", each, totallist[each - 1])
 
     def make_connection(self):
         '''
