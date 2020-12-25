@@ -6,7 +6,7 @@ class main():
     '''
     universal = None
     files_to_add = {}
-    
+
     global ipfshttpclient
 
     def delete(self):
@@ -24,7 +24,11 @@ class main():
         '''
         self.universal = universal
         self.client = self.make_connection()
-        #print("init Universal", self.universal)
+
+        if self.client is None:
+            return
+
+
         #Altering Sqlite3 table to have IPFS storage
         # Code pulled from: https://www.reddit.com/r/learnpython/comments/29zchz/sqlite3_check_if_a_column_exists_if_it_does_not/
         #Deletes the old IPFS table data.
@@ -32,7 +36,7 @@ class main():
             print("Updating IPFS DB to modern standards PLEASEWAIT")
             self.universal.databaseRef.direct_sqlite("""DROP TABLE File_backup""")
             self.universal.databaseRef.direct_sqlite("""CREATE TABLE File_backup(id INTEGER,
-                                                hash text, 
+                                                hash text,
                                                 filename text,
                                                 size real,
                                                 ext text)""")
@@ -45,78 +49,66 @@ class main():
         #Gathering list of empty spots inside of DB.
 
         namespace_id = universal.databaseRef.pull_data("Namespace", "name", "IPFS")[0][0]
-        
-        # Backwards compatible to update DB.
+
+        #New updated updating code.
         if self.universal.databaseRef.return_count("File", "id") != self.universal.databaseRef.return_count("Tags", "namespace", namespace_id):
-            print(self.universal.databaseRef.return_count("File", "id"), self.universal.databaseRef.return_count("Tags", "namespace", namespace_id))
-            has_ipfs = self.universal.databaseRef.pull_data("Tags", "namespace", namespace_id)
-            
-            to_del = []
-            for each in has_ipfs:
-                try:
-                    file_id = self.universal.databaseRef.search_relationships(each[0])
-                    to_del.append(file_id[0][1])
-                except IndexError:
-                    print("ERROR WITH: ", each, file_id)
-                    #to_del.append(file_id[0][1])
-                    self.universal.databaseRef.delete_data("Tags", "id", each[0])
+            file = self.universal.databaseRef.pull_data("File", "id", None)
+            tag = self.universal.databaseRef.pull_data("Tags", "namespace", namespace_id)
 
-            for each in to_del:
-                try:
-                    self.universal.databaseRef.delete_data("Relationship", "tagid", each)
-                    self.universal.databaseRef.delete_data("Tags", "id", each)
-                except IndexError:
-                    print("ERROR WITH A : ", each)
-                    self.universal.databaseRef.delete_data("Tags", "id", each[0])
+            to_parse = []
 
-            totallist = self.universal.databaseRef.invert_pull_data("File", "id", "")
-            #has_ipfs = []
-            file_list = []
-            for each in totallist:
-                file_id = each[0]
-                file_list.append(file_id)
-            
-            ipfs_list = []
-            has_ipfs = self.universal.databaseRef.pull_data("Tags", "namespace", namespace_id)
-            for each in has_ipfs:
-                try:
-                    file_id = self.universal.databaseRef.search_relationships(each[0])[0][0]
-                    ipfs_list.append(file_id)
-                except IndexError:
-                    print(each, file_id)
+            #Loops through tags and file lists and gets results to parse.
+            tag_lists = []
+            for each in tag:
+                relationship = self.universal.databaseRef.search_relationships(each[0])
+                tag_lists.append(relationship[0][0])
 
-            parsed_list = set(file_list) - set(ipfs_list)
-            print("Parsed List Length", len(parsed_list))
-            for each in parsed_list:
-                try:
-                    self.pin_handler("", totallist[each - 1][2], totallist[each - 1][1])
-                except IndexError:
-                    print("Err1r with: ", each, totallist[each - 1])
+            file_lists = []
+            for each in file:
+                file_lists.append(each[0])
+
+            #Error checking for weirdness.
+            #Removes all fileids that already have been added by IPFS.
+            if len(file_lists) > len(tag_lists):
+                to_parse = set(file_lists) - set(tag_lists)
+
+            #Pinning file to IPFS
+            for each in to_parse:
+                file_data = self.universal.databaseRef.pull_file(each)[0]
+                print("IPFS is adding file to share.")
+                print(file_data)
+                self.pin_handler("main", file_data[2], file_data[1])
 
     def make_connection(self):
         '''
         Creates a connection to the IPFS daemon.
         '''
-        return ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
-    
+        try:
+            holder = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
+            return holder
+        except ipfshttpclient.exceptions.ConnectionError:
+            return None
+
+
     def pin_handler(self, *args):
         '''
         Handles the pinning of files to IPFS.
         [1] is the file name
         [2] is the file hash
         '''
-        #print("PinHandler")
         if args[0] is None:
             return
         else:
             folder = self.universal.rateLimiter.InternetHandler.check_dir(self, args[2])
             location = folder + args[1]
-
+            if self.client is None:
+                return
             result = self.addPin(location)
+
             universal.log_write.write("DIYHydrus-IPFS-Plugin has pinned: " + str(result["Name"]) + " to the IPFS database. Its hash is: ' " + str(result["Hash"]) + " '")
             print("DIYHydrus-IPFS-Plugin has pinned: " + str(result["Name"]) + " to the IPFS database. Its hash is: ' " + str(result["Hash"]) + " '")
             self.files_to_add[result["Hash"]] = args[2]
-            
+
 
     def addPin(self, fileLocation):
         '''
