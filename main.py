@@ -41,7 +41,7 @@ class main():
 
                         tup = make_tuple(self.b642str(message["data"]))
 
-                        if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None)
+                        if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None):
 
                             data_str = json.dumps(tup[2])
                             data = json.loads(data_str)
