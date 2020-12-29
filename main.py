@@ -1,3 +1,4 @@
+from ast import literal_eval as make_tuple
 import ipfshttpclient
 import base64
 import random
@@ -20,31 +21,39 @@ class main():
     global random
     global time
     global sys
-    import json
+    global json
+    global make_tuple
 
     def listener(self, *args):
         print("creating listener")
         print("aaargs", args)
         with self.client.pubsub.subscribe(args[1]) as sub:
             try:
+                if args[2]._stop_event.is_set():
+                    return
                 for message in sub:
                     if args[1] == 'DIYHydrus-IPFS-Pubsub-Introduction' and self.b642str(message["data"]) == str(self.selfhash):
                         self.pubsub_name = message["from"]
                         sys.exit()
                         self.universal.ThreadManager.remove_thread(args[2])
-                    if args[2]._stop_event.is_set():
-                        return
-                    if not message["from"] == self.pubsub_name:
-                        #print("pub", self.pubsub_name)
-                        file_hash, ipfs_hash, jsond = tuple(self.b642str(message["data"]))
-                        data = json.loads(jsond)
-                        temp = {}
-                        temp_data = {}
-                        temp_data[file_hash] = data
-                        temp[file_hash] = data["filename"]
-                        self.universal.pluginManager.interpret_data(temp_data, temp)
-                        print(message["from"], self.b642str(message["data"]), message["seqno"], message["topicIDs"])
 
+                    if not message["from"] == self.pubsub_name:
+
+                        tup = make_tuple(self.b642str(message["data"]))
+
+                        if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None)
+
+                            data_str = json.dumps(tup[2])
+                            data = json.loads(data_str)
+                            #print(data)
+                            #data["hash"] = str(tup[0])
+                            data["IPFS"] = str(tup[1])
+                            temp = []
+
+                            temp.append("")
+                            temp.append(str(tup[0]))
+
+                            self.universal.pluginManager.interpret_data(data, temp)
 
             except Exception as e:
                 print(e)
