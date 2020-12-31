@@ -43,6 +43,9 @@ class main():
 
                         if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None):
 
+                            print("Got info on file ", str(tup[2]), " adding to db.")
+                            self.universal.log_write.write("DIYHudrus-IPFS-Plugin has added " + str(tup[2]) + " to db. ")
+
                             data_str = json.dumps(tup[3])
                             data = json.loads(data_str)
                             #print(data)
