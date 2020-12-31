@@ -67,6 +67,7 @@ class main():
 
             except Exception as e:
                 print(e)
+                self.universal.log_write.write("DIYHudrus-IPFS-Plugin ERRORED " + str(e))
                 self.listener(self, args)
 
     def b642str(self, b64):
