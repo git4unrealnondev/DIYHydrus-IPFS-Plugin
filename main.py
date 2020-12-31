@@ -43,21 +43,28 @@ class main():
 
                         if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None):
 
-                            data_str = json.dumps(tup[2])
+                            data_str = json.dumps(tup[3])
                             data = json.loads(data_str)
                             #print(data)
                             #data["hash"] = str(tup[0])
+                            #print(type(data), tup)
                             data["IPFS"] = str(tup[1])
                             temp = []
 
-                            temp.append("")
+                            temp.append(str(tup[2]))
                             temp.append(str(tup[0]))
 
-                            self.universal.pluginManager.interpret_data(data, temp)
+                            data_encapsulate = {}
+                            temp_encapsulate = {}
+                            data_encapsulate[str(tup[0])] = data
+                            temp_encapsulate[str(tup[0])] = temp
+                            #print(data_encapsulate, temp_encapsulate)
+                            self.universal.scraperHandler.interpret_data(data_encapsulate, temp_encapsulate)
+
 
             except Exception as e:
                 print(e)
-                self.listener(self, args)
+                #self.listener(self, args)
 
     def b642str(self, b64):
         return base64.b64decode(b64).decode('utf-8')
@@ -93,7 +100,7 @@ class main():
             self.pubsub = False
 
         if self.pubsub:
-            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub')
+            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub-Private')
 
         #Altering Sqlite3 table to have IPFS storage
         # Code pulled from: https://www.reddit.com/r/learnpython/comments/29zchz/sqlite3_check_if_a_column_exists_if_it_does_not/
@@ -156,9 +163,10 @@ class main():
         Data should be in this order:
         [0] File Hash
         [1] IPFS Hash
-        [2] Tag Data
+        [2] File Name
+        [3] Data
         '''
-        self.client.pubsub.publish('DIYHydrus-IPFS-Pubsub', str(args))
+        self.client.pubsub.publish('DIYHydrus-IPFS-Pubsub-Private', str(args))
 
     def make_connection(self):
         '''
@@ -193,7 +201,7 @@ class main():
 
             #Publishes data to IPFS.
             if self.pubsub and len(args) == 4:
-                self.publish(args[2], str(result["Hash"]),args[3])
+                self.publish(args[2], str(result["Hash"]), str(result["Name"]), args[3])
 
 
     def addPin(self, fileLocation):
