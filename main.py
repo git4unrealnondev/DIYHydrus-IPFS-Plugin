@@ -1,4 +1,11 @@
+from ast import literal_eval as make_tuple
 import ipfshttpclient
+import base64
+import random
+import time
+import sys
+import json
+
 class main():
     '''
     An example plugin for DIY-Hydrus.
@@ -6,8 +13,64 @@ class main():
     '''
     universal = None
     files_to_add = {}
+    pubsub = True
+    pubsub_name = None
 
     global ipfshttpclient
+    global base64
+    global random
+    global time
+    global sys
+    global json
+    global make_tuple
+
+    def listener(self, *args):
+        print("creating listener")
+        print("aaargs", args)
+        with self.client.pubsub.subscribe(args[1]) as sub:
+            try:
+                if args[2]._stop_event.is_set():
+                    return
+                for message in sub:
+                    if args[1] == 'DIYHydrus-IPFS-Pubsub-Introduction' and self.b642str(message["data"]) == str(self.selfhash):
+                        self.pubsub_name = message["from"]
+                        sys.exit()
+                        self.universal.ThreadManager.remove_thread(args[2])
+
+                    if not message["from"] == self.pubsub_name:
+
+                        tup = make_tuple(self.b642str(message["data"]))
+
+                        if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None):
+
+                            print("Got info on file ", str(tup[2]), " adding to db.")
+                            self.universal.log_write.write("DIYHudrus-IPFS-Plugin has added " + str(tup[2]) + " to db. ")
+
+                            data_str = json.dumps(tup[3])
+                            data = json.loads(data_str)
+                            #print(data)
+                            #data["hash"] = str(tup[0])
+                            #print(type(data), tup)
+                            data["IPFS"] = str(tup[1])
+                            temp = []
+
+                            temp.append(str(tup[2]))
+                            temp.append(str(tup[0]))
+
+                            data_encapsulate = {}
+                            temp_encapsulate = {}
+                            data_encapsulate[str(tup[0])] = data
+                            temp_encapsulate[str(tup[0])] = temp
+                            #print(data_encapsulate, temp_encapsulate)
+                            self.universal.scraperHandler.interpret_data(data_encapsulate, temp_encapsulate)
+
+
+            except Exception as e:
+                print(e)
+                #self.listener(self, args)
+
+    def b642str(self, b64):
+        return base64.b64decode(b64).decode('utf-8')
 
     def delete(self):
         '''
@@ -28,6 +91,19 @@ class main():
         if self.client is None:
             return
 
+        #Checking if IPFS Pubsub is enabled
+        self.selfhash = random.getrandbits(256)
+        try:
+            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub-Introduction')
+            time.sleep(1)
+            print("publishing selfhahs", self.selfhash, self.selfhash)
+            self.client.pubsub.publish('DIYHydrus-IPFS-Pubsub-Introduction', self.selfhash)
+        except Exception as f:
+            print("fail", f)
+            self.pubsub = False
+
+        if self.pubsub:
+            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub-Private')
 
         #Altering Sqlite3 table to have IPFS storage
         # Code pulled from: https://www.reddit.com/r/learnpython/comments/29zchz/sqlite3_check_if_a_column_exists_if_it_does_not/
@@ -61,7 +137,13 @@ class main():
             tag_lists = []
             for each in tag:
                 relationship = self.universal.databaseRef.search_relationships(each[0])
-                tag_lists.append(relationship[0][0])
+                #print(each, relationship, type(relationship), len(relationship))
+                if len(relationship) == 1:
+                    tag_lists.append(relationship[0][0])
+                else:
+                    self.universal.databaseRef.delete_data("Tags", "id", each[0])
+                #else:
+                #    print(relationship, type(relationship))
 
             file_lists = []
             for each in file:
@@ -77,7 +159,17 @@ class main():
                 file_data = self.universal.databaseRef.pull_file(each)[0]
                 print("IPFS is adding file to share.")
                 print(file_data)
-                self.pin_handler("main", file_data[2], file_data[1])
+                #self.pin_handler("main", file_data[2], file_data[1])
+
+    def publish(self, *args):
+        '''
+        Data should be in this order:
+        [0] File Hash
+        [1] IPFS Hash
+        [2] File Name
+        [3] Data
+        '''
+        self.client.pubsub.publish('DIYHydrus-IPFS-Pubsub-Private', str(args))
 
     def make_connection(self):
         '''
@@ -95,6 +187,7 @@ class main():
         Handles the pinning of files to IPFS.
         [1] is the file name
         [2] is the file hash
+        [3] should be the data for tags.
         '''
         if args[0] is None:
             return
@@ -108,6 +201,10 @@ class main():
             universal.log_write.write("DIYHydrus-IPFS-Plugin has pinned: " + str(result["Name"]) + " to the IPFS database. Its hash is: ' " + str(result["Hash"]) + " '")
             print("DIYHydrus-IPFS-Plugin has pinned: " + str(result["Name"]) + " to the IPFS database. Its hash is: ' " + str(result["Hash"]) + " '")
             self.files_to_add[result["Hash"]] = args[2]
+
+            #Publishes data to IPFS.
+            if self.pubsub and len(args) == 4:
+                self.publish(args[2], str(result["Hash"]), str(result["Name"]), args[3])
 
 
     def addPin(self, fileLocation):
