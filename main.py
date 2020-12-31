@@ -27,15 +27,15 @@ class main():
     def listener(self, *args):
         print("creating listener")
         print("aaargs", args)
-        with self.client.pubsub.subscribe(args[1]) as sub:
+        with self.client.pubsub.subscribe(args[0]) as sub:
             try:
-                if args[2]._stop_event.is_set():
+                if args[1]._stop_event.is_set():
                     return
                 for message in sub:
-                    if args[1] == 'DIYHydrus-IPFS-Pubsub-Introduction' and self.b642str(message["data"]) == str(self.selfhash):
+                    if args[0] == 'DIYHydrus-IPFS-Pubsub-Introduction' and self.b642str(message["data"]) == str(self.selfhash):
                         self.pubsub_name = message["from"]
                         sys.exit()
-                        self.universal.ThreadManager.remove_thread(args[2])
+                        self.universal.ThreadManager.remove_thread(args[1])
 
                     if not message["from"] == self.pubsub_name:
 
@@ -68,7 +68,7 @@ class main():
             except Exception as e:
                 print(e)
                 self.universal.log_write.write("DIYHudrus-IPFS-Plugin ERRORED " + str(e))
-                self.listener(self, args)
+                self.listener(args)
 
     def b642str(self, b64):
         return base64.b64decode(b64).decode('utf-8')
@@ -104,7 +104,7 @@ class main():
             self.pubsub = False
 
         if self.pubsub:
-            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub-Private')
+            self.universal.ThreadManager.run_in_thread(self.listener, 'DIYHydrus-IPFS-Pubsub-Private')
 
         #Altering Sqlite3 table to have IPFS storage
         # Code pulled from: https://www.reddit.com/r/learnpython/comments/29zchz/sqlite3_check_if_a_column_exists_if_it_does_not/
