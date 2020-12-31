@@ -67,7 +67,7 @@ class main():
 
             except Exception as e:
                 print(e)
-                #self.listener(self, args)
+                self.listener(self, args)
 
     def b642str(self, b64):
         return base64.b64decode(b64).decode('utf-8')
