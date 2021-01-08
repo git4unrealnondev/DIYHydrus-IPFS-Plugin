@@ -28,7 +28,7 @@ class main():
 
     def listener(self, *args):
         print("creating listener")
-        print(args[0].universal)
+        print(args[0].counter)
         print("aaargs", args, args[0].universal.databaseRef.VERSION)
         with self.client.pubsub.subscribe(args[1]) as sub:
             try:
@@ -43,7 +43,9 @@ class main():
                     if not message["from"] == self.pubsub_name:
 
                         tup = make_tuple(self.b642str(message["data"]))
+                        print("b")
                         print("b", args[0].universal.databaseRef.VERSION)
+                        print("c")
                         if not str(tup[0]) in args[0].universal.databaseRef.pull_data("File", "hash", None):
 
                             print("Got info on file ", str(tup[2]), " adding to db.")
@@ -65,8 +67,9 @@ class main():
                             data_encapsulate[str(tup[0])] = data
                             temp_encapsulate[str(tup[0])] = temp
                             #print(data_encapsulate, temp_encapsulate)
+                            print("e")
                             self.universal.scraperHandler.interpret_data(data_encapsulate, temp_encapsulate)
-
+                            print("F")
 
             except Exception as e:
                 print(e)
