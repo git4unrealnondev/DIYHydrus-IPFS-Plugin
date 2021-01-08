@@ -27,9 +27,7 @@ class main():
     global make_tuple
 
     def listener(self, *args):
-        print("creating listener")
-        print(args[0].counter)
-        print("aaargs", args, args[0].universal.databaseRef.VERSION)
+
         with self.client.pubsub.subscribe(args[1]) as sub:
             try:
                 if args[2]._stop_event.is_set():
@@ -39,15 +37,10 @@ class main():
                         self.pubsub_name = message["from"]
                         sys.exit()
                         self.universal.ThreadManager.remove_thread(args[2])
-                    print("a")
+
                     if not message["from"] == self.pubsub_name:
 
-                        print("q", self.universal.databaseRef.VERSION)
-
                         tup = make_tuple(self.b642str(message["data"]))
-                        print("b")
-                        print("b", self.universal.databaseRef.VERSION)
-                        print("c")
                         if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None):
 
                             print("Got info on file ", str(tup[2]), " adding to db.")
@@ -69,9 +62,9 @@ class main():
                             data_encapsulate[str(tup[0])] = data
                             temp_encapsulate[str(tup[0])] = temp
                             #print(data_encapsulate, temp_encapsulate)
-                            print("e")
+
                             self.universal.scraperHandler.interpret_data(data_encapsulate, temp_encapsulate)
-                            print("F")
+
 
             except Exception as e:
                 print(e)
