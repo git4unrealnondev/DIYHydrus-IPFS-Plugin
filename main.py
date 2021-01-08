@@ -14,6 +14,7 @@ class main():
     universal = None
     files_to_add = {}
     pubsub = True
+    counter = 0
     pubsub_name = None
     ipfs_search = 'DIYHydrus-IPFS-Pubsub-Private-v001'
 
@@ -68,8 +69,11 @@ class main():
 
             except Exception as e:
                 print(e)
+                self.counter += 1
+                if self.counter >= 3:
+                    sys.exit()
                 self.universal.log_write.write("DIYHudrus-IPFS-Plugin ERRORED " + str(e) + str(args))
-                self.listener(self, args)
+                self.listener(args)
 
     def b642str(self, b64):
         return base64.b64decode(b64).decode('utf-8')
