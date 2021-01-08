@@ -44,9 +44,9 @@ class main():
 
                         tup = make_tuple(self.b642str(message["data"]))
                         print("b")
-                        print("b", args[0].universal.databaseRef.VERSION)
+                        print("b", self.universal.databaseRef.VERSION)
                         print("c")
-                        if not str(tup[0]) in args[0].universal.databaseRef.pull_data("File", "hash", None):
+                        if not str(tup[0]) in self.universal.databaseRef.pull_data("File", "hash", None):
 
                             print("Got info on file ", str(tup[2]), " adding to db.")
                             self.universal.log_write.write("DIYHudrus-IPFS-Plugin has added " + str(tup[2]) + " to db. ")
