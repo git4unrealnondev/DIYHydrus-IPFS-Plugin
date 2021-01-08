@@ -28,7 +28,8 @@ class main():
 
     def listener(self, *args):
         print("creating listener")
-        print("aaargs", args)
+        print(args[0].universal)
+        print("aaargs", args, args[0].universal.databaseRef.VERSION)
         with self.client.pubsub.subscribe(args[1]) as sub:
             try:
                 if args[2]._stop_event.is_set():
