@@ -15,7 +15,7 @@ class main():
     files_to_add = {}
     pubsub = True
     pubsub_name = None
-    ipfs_search = 'DIYHydrus-IPFS-Pubsub-Introduction'
+    ipfs_search = 'DIYHydrus-IPFS-Pubsub-Private-v001'
 
     global ipfshttpclient
     global base64
@@ -33,7 +33,7 @@ class main():
                 if args[1]._stop_event.is_set():
                     return
                 for message in sub:
-                    if args[1] == self.ipfs_search and self.b642str(message["data"]) == str(self.selfhash):
+                    if args[1] == 'DIYHydrus-IPFS-Pubsub-Introduction' and self.b642str(message["data"]) == str(self.selfhash):
                         self.pubsub_name = message["from"]
                         sys.exit()
                         self.universal.ThreadManager.remove_thread(args[2])
@@ -96,16 +96,16 @@ class main():
         #Checking if IPFS Pubsub is enabled
         self.selfhash = random.getrandbits(256)
         try:
-            self.universal.ThreadManager.run_in_thread(self.listener, self, self.ipfs_search)
+            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub-Introduction')
             time.sleep(1)
             print("publishing selfhahs", self.selfhash, self.selfhash)
-            self.client.pubsub.publish(self.ipfs_search, self.selfhash)
+            self.client.pubsub.publish('DIYHydrus-IPFS-Pubsub-Introduction', self.selfhash)
         except Exception as f:
             print("fail", f)
             self.pubsub = False
 
         if self.pubsub:
-            self.universal.ThreadManager.run_in_thread(self.listener, self, 'DIYHydrus-IPFS-Pubsub-Private')
+            self.universal.ThreadManager.run_in_thread(self.listener, self, self.ipfs_search)
 
         #Altering Sqlite3 table to have IPFS storage
         # Code pulled from: https://www.reddit.com/r/learnpython/comments/29zchz/sqlite3_check_if_a_column_exists_if_it_does_not/
@@ -171,7 +171,7 @@ class main():
         [2] File Name
         [3] Data
         '''
-        self.client.pubsub.publish('DIYHydrus-IPFS-Pubsub-Private', str(args))
+        self.client.pubsub.publish(self.ipfs_search, str(args))
 
     def make_connection(self):
         '''
