@@ -30,7 +30,7 @@ class main():
         print("aaargs", args)
         with self.client.pubsub.subscribe(args[1]) as sub:
             try:
-                if args[1]._stop_event.is_set():
+                if args[2]._stop_event.is_set():
                     return
                 for message in sub:
                     if args[1] == 'DIYHydrus-IPFS-Pubsub-Introduction' and self.b642str(message["data"]) == str(self.selfhash):
@@ -68,7 +68,7 @@ class main():
 
             except Exception as e:
                 print(e)
-                self.universal.log_write.write("DIYHudrus-IPFS-Plugin ERRORED " + str(e))
+                self.universal.log_write.write("DIYHudrus-IPFS-Plugin ERRORED " + str(e) + str(args))
                 self.listener(self, args)
 
     def b642str(self, b64):
