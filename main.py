@@ -42,7 +42,7 @@ class main():
                     print("a")
                     if not message["from"] == self.pubsub_name:
 
-                        print("q", self.universal.databaseRef.VERSION))
+                        print("q", self.universal.databaseRef.VERSION)
 
                         tup = make_tuple(self.b642str(message["data"]))
                         print("b")
