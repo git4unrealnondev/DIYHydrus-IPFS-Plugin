@@ -73,7 +73,7 @@ class main():
                 if self.counter >= 3:
                     sys.exit()
                 self.universal.log_write.write("DIYHudrus-IPFS-Plugin ERRORED " + str(e) + str(args))
-                self.listener(args)
+                self.listener(args[0], args[1], args[2])
 
     def b642str(self, b64):
         return base64.b64decode(b64).decode('utf-8')
