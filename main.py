@@ -38,11 +38,11 @@ class main():
                         self.pubsub_name = message["from"]
                         sys.exit()
                         self.universal.ThreadManager.remove_thread(args[2])
-
+                    print("a")
                     if not message["from"] == self.pubsub_name:
 
                         tup = make_tuple(self.b642str(message["data"]))
-
+                        print("b", args[0].universal.databaseRef.VERSION)
                         if not str(tup[0]) in args[0].universal.databaseRef.pull_data("File", "hash", None):
 
                             print("Got info on file ", str(tup[2]), " adding to db.")
